@@ -10,6 +10,8 @@
 #include <avr/eeprom.h>
 #include <util/crc16.h>
 #include <avr/interrupt.h>
+#include <avr/sleep.h>
+#include <avr/wdt.h>
 
 
 #define LED_PIN		PB0
@@ -17,9 +19,10 @@
 #define ADC_PIN		PB3
 #define SWITCH_PIN	PB1
 
+#define UNUSED_PINS	(_BV(PB2) | _BV(PB5))
+
 #define SETUP_SAMPLES 16
 
-static volatile uint8_t ms;
 
 struct EEPROMData
 {
@@ -35,17 +38,17 @@ uint8_t calcCRC(uint16_t value)
 	return crc;
 }
 
+ISR(WDT_vect)
+{
+	wdt_reset();
+}
+
 int main(void)
 {
-	if ( MCUSR & ~_BV(WDRF) )
-	{
-		// Watchdog reset (wake from sleep)
-	}
-
 	// Outputs
 	DDRB |= _BV(LED_PIN) | _BV(BUZZER_PIN);
 	// Pullup on switch input
-	PORTB |= _BV(SWITCH_PIN);
+	PORTB |= _BV(SWITCH_PIN) | UNUSED_PINS;
 
 	// Set up ADC
 	ADMUX = _BV(REFS2) | _BV(REFS1) |	// Internal 2.56v reference
@@ -108,8 +111,16 @@ int main(void)
 		eeprom_write_block( &data, 0, sizeof(data) );
 	}
 
+	sei();
+	set_sleep_mode(SLEEP_MODE_IDLE);
+
+	uint8_t beeper = 0;
 	while (1)
 	{
+		// Watchdog reset (wake from sleep)
+		ADCSRA |= _BV(ADSC);
+		while ( (ADCSRA & ~_BV(ADSC)) == 0 )
+			continue;
 		ADCSRA |= _BV(ADSC);
 		while ( (ADCSRA & ~_BV(ADSC)) == 0 )
 			continue;
@@ -119,14 +130,24 @@ int main(void)
 		{
 			PORTB |= _BV(LED_PIN);
 			//PORTB |= _BV(BUZZER_PIN);
-			TCCR1 |= _BV(CS10);					// Prescale /1
+			if ( beeper & 1 )
+				TCCR1 &= ~_BV(CS10);				// clk stopped
+			else
+				TCCR1 |= _BV(CS10);					// Prescale /1
+			beeper++;
 		}
 		else
 		{
 			PORTB &= ~_BV(LED_PIN);
 			//PORTB &= ~_BV(BUZZER_PIN);
 			TCCR1 &= ~_BV(CS10);				// clk stopped
+			beeper = 0;
 		}
+		
+		WDTCR = _BV(WDE) |					// Watch dog enable
+				_BV(WDIE) |					// watch dog interrupt
+				_BV(WDP1) | _BV(WDP0);		// 0.125ms
+		sleep_mode();	// we'll be woken by the watchdog.
 	}
 }
 
