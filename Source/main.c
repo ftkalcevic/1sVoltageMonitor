@@ -12,7 +12,7 @@
 #include <avr/interrupt.h>
 #include <avr/sleep.h>
 #include <avr/wdt.h>
-
+#include <avr/cpufunc.h>
 
 #define LED_PIN		PB0
 #define BUZZER_PIN	PB4
@@ -45,6 +45,9 @@ ISR(WDT_vect)
 
 int main(void)
 {
+	CLKPR = _BV(CLKPCE);
+	CLKPR = _BV(CLKPS2) | _BV(CLKPS1);
+
 	// Outputs
 	DDRB |= _BV(LED_PIN) | _BV(BUZZER_PIN);
 	// Pullup on switch input
@@ -57,18 +60,18 @@ int main(void)
 	ADCSRA = _BV(ADEN) |				// ADC Enable
 			0 |							// manual trigger
 			0 |							// No interrupts
-			_BV(ADPS1) | _BV(ADPS0);	// Prescale x8
+			0;							// Prescale x2
 	ADCSRB = 0;							
 	DIDR0 = _BV(ADC3D);
 	_delay_ms(1);
 
-	// Setup tranducer timer1
+	// Setup tranducer timer1 -4.4kHz
 	TCCR1 = _BV(CTC1) |					// Clear counter on OCR1C match
 			0;							// clock stopped
 	GTCCR = _BV(PWM1B) |				// PWM mode
 			_BV(COM1B0);				// toggle oc1b
-	OCR1B = 111;
-	OCR1C = 222;
+	OCR1B = 14;
+	OCR1C = 28;
 
 
 	// throw the first value away
