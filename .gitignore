@@ -1,5 +1,6 @@
 Source/.vs/*
 Source/Debug/*
 Hardware/History/*
+Hardware/Logs/*
 __Previews*/
 Source/Release*/
