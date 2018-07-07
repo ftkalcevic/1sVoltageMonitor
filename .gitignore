@@ -4,3 +4,11 @@ Hardware/History/*
 Hardware/Logs/*
 __Previews*/
 Source/Release*/
+Hardware/Outputs/*.apr
+Hardware/Outputs/*.drr
+Hardware/Outputs/*.extrep
+Hardware/Outputs/*.ldp
+Hardware/Outputs/*.rep
+Hardware/Outputs/*.rul
+Hardware/Outputs/*.apr_lib
+Hardware/Outputs/Status Report.txt
