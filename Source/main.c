@@ -53,7 +53,7 @@ static uint8_t calcCRC(uint16_t value)
 static void PWMOn()
 {
 #if PWM
-	// Setup tranducer timer1 -4.4kHz
+	// Setup transducer timer1 -4.4kHz
 	TCCR1 = _BV(CTC1) |					// Clear counter on OCR1C match
 #if defined(PWM300)
 			_BV(CS11);					// Prescale /2
@@ -141,6 +141,8 @@ int main(void)
 	PRR |= _BV(PRUSI);	// we don't use USI
 	PRR |= _BV(PRTIM0);	// we don't use TIMER0
 
+	PWMOff();
+
 #if 0
 	PWMOn();
 	for(;;){}
@@ -153,7 +155,7 @@ int main(void)
 
 	// if there is no stored low voltage value, or the switch is pressed, we go into calibrate mode
 	if ( crc != data.crc ||
-		 !(PINB & ~_BV(SWITCH_PIN)) )
+		 (PINB & _BV(SWITCH_PIN)) == 0 )
 	{
 		// Average n samples
 		uint16_t sum = 0;
